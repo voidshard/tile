@@ -56,7 +56,7 @@ tree.large.01.1.2.10.png
 tree.large.01.1.3.0.png
 tree.large.01.tmx
 ```
-This creates images with the names <prefix>.<x>.<y>.<z>.png and a matching .tmx file. You'll note that the z levels are 0, 10, 20, 30 rather than 0-3. By default we multiply the z layer by 10 in order to leave room for say, hand made additions or any other finishing touches (see `--mult`).
+This creates images with the names `<prefix>.<x>.<y>.<z>.png` and a matching .tmx file. You'll note that the z levels are 0, 10, 20, 30 rather than 0-3. By default we multiply the z layer by 10 in order to leave room for say, hand made additions or any other finishing touches (see `--mult`).
 
 Since the .tmx file includes it's own tileset that references the images it needs we can directly open this with the Tiled editor to check it out.
 

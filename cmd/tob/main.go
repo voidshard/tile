@@ -71,7 +71,7 @@ var cli struct {
 	// between existing layers later on without altering things)
 	Mult int `help:"gap between z levels (leave space for future object layers)" default:"10"`
 
-	ImageOnly bool `help:"only cut out image(s) (not .tmx file needed)"`
+	ImageOnly bool `help:"only cut out image(s) (no .tmx file needed)"`
 }
 
 func decode(in io.Reader) (image.Image, error) {

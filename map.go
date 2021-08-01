@@ -40,7 +40,6 @@ func (m *Map) SetMapProperties(in *Properties) {
 // Fits returns if copying in the given map to (x,y,zoffset) would
 // overwrite an existing tile on any layer in our current map.
 func (m *Map) Fits(x, y, zoffset int, o *Map) bool {
-	ts := o.Tilesets[0]
 	if zoffset < 0 {
 		levels := m.ZLevels()
 		for i := len(levels) - 1; i >= 0; i-- {

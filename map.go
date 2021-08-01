@@ -37,13 +37,57 @@ func (m *Map) SetMapProperties(in *Properties) {
 	m.RootProperties = in.toList()
 }
 
+// Fits returns if copying in the given map to (x,y,zoffset) would
+// overwrite an existing tile on any layer in our current map.
+func (m *Map) Fits(x, y, zoffset int, o *Map) bool {
+	ts := o.Tilesets[0]
+	if zoffset < 0 {
+		levels := m.ZLevels()
+		for i := len(levels) - 1; i >= 0; i-- {
+			props := m.At(x, y, i)
+			if props != nil {
+				zoffset = i
+				break
+			}
+		}
+		if zoffset < 0 {
+			zoffset = 0
+		}
+	}
+
+	for _, tl := range o.TileLayers {
+		z, err := strconv.ParseInt(tl.Name, 10, 64)
+		if err != nil {
+			continue
+		}
+
+		for index, tid := range tl.decodedTiles {
+			if tid == 0 {
+				continue // nil tile
+			}
+
+			// the reverse of index = y * width + x
+			tx := index % o.Width
+			ty := index / o.Width
+
+			// check if there is a tile there
+			t := m.At(tx, ty, int(z)+zoffset)
+			if t != nil {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // Add the given map `o` starting at the location x,y
 // We merge the TileLayers of both maps, but we only consider TileLayers that
 // we write ie, those named after their z-layers (0, 1, 2, 3, ...).
 // (x,y) is the top left tile, irrespective of z-layer.
 func (m *Map) Add(x, y, zoffset int, o *Map) {
 	ts := o.Tilesets[0]
-	if zoffset < 0 { // a value of -1 (or less) implies we should pick the highest z level
+	if zoffset < 0 {
 		levels := m.ZLevels()
 		for i := len(levels) - 1; i >= 0; i-- {
 			props := m.At(x, y, i)

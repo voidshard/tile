@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kong"
+	"github.com/fogleman/gg"
 	"github.com/nfnt/resize"
 
 	"github.com/voidshard/tile"
@@ -72,6 +73,9 @@ var cli struct {
 	Mult int `help:"gap between z levels (leave space for future object layers)" default:"10"`
 
 	ImageOnly bool `help:"only cut out image(s) (no .tmx file needed)"`
+
+	// Rotate output image(s) - we only support square images, so rotations are in increments of 90
+	Rotate int `help:"rotate image in 90 degree increments (90, 180, 270). Image assumed to be square" default="0" enum="0,90,180,270"`
 }
 
 func decode(in io.Reader) (image.Image, error) {
@@ -185,6 +189,18 @@ func parseProps() *tile.Properties {
 	return p
 }
 
+// rotate image by some degrees (0, 90, 180, 270)
+func rotate(in image.Image, degrees int) *image.RGBA {
+	iw, ih := in.Bounds().Dx(), in.Bounds().Dy()
+	ctx := gg.NewContext(iw, ih)
+
+	ctx.RotateAbout(gg.Radians(float64(degrees)), float64(iw/2), float64(ih/2))
+	ctx.DrawImage(in, 0, 0)
+
+	i := ctx.Image()
+	return i.(*image.RGBA)
+}
+
 // parseOffset handles reading
 // "<someint>t" as "<x/y> + offset in tiles"
 // or an absolute value
@@ -276,6 +292,10 @@ func main() {
 					c := in.At(tx+x*cli.TileWidth, ty+y*cli.TileHeight)
 					t.Set(tx, ty, c)
 				}
+			}
+			if cli.Rotate != 0 {
+				fmt.Println("rotating image ")
+				t = rotate(t, cli.Rotate)
 			}
 
 			// decide image name

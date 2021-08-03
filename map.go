@@ -3,9 +3,11 @@
 package tile
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"sort"
 	"strconv"
@@ -72,12 +74,12 @@ func (m *Map) Fits(x, y, zoffset int, o *Map) bool {
 			// check if there is a tile there
 			t := m.At(tx+x, ty+y, int(z)+zoffset)
 			if t != nil {
-				return true
+				return false
 			}
 		}
 	}
 
-	return false
+	return true
 }
 
 // Add the given map `o` starting at the location x,y
@@ -390,4 +392,14 @@ func Open(fname string) (*Map, error) {
 		return nil, err
 	}
 	return Decode(f)
+}
+
+//
+func (m *Map) WriteFile(fname string) error {
+	buff := bytes.Buffer{}
+	err := m.Encode(&buff)
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(fname, buff.Bytes(), 0644)
 }

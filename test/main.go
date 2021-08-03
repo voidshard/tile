@@ -28,13 +28,19 @@ func main() {
 	}
 
 	canFit := m.Fits(3, 3, 1, tree)
-
+	if !canFit {
+		panic(fmt.Sprintf("we should be able to fit this"))
+	}
 	fmt.Println("fits", canFit)
-
 	m.Add(3, 3, 1, tree)
 
-	err = m.WriteFile("test.tmx")
+	err = m.WriteFile("one.tmx")
 	if err != nil {
 		panic(err)
+	}
+
+	canFit = m.Fits(3, 3, 1, tree)
+	if canFit {
+		panic(fmt.Sprintf("this is copying directly over the first tree"))
 	}
 }

@@ -161,7 +161,7 @@ func (m *Map) At(x, y, z int) *Properties {
 	}
 
 	index := y*m.Width + x
-	if len(l.decodedTiles) >= index {
+	if index >= len(l.decodedTiles) {
 		return nil
 	}
 

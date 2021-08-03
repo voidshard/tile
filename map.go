@@ -70,7 +70,7 @@ func (m *Map) Fits(x, y, zoffset int, o *Map) bool {
 			ty := index / o.Width
 
 			// check if there is a tile there
-			t := m.At(tx, ty, int(z)+zoffset)
+			t := m.At(tx+x, ty+y, int(z)+zoffset)
 			if t != nil {
 				return true
 			}

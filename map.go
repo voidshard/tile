@@ -310,10 +310,14 @@ func (m *Map) Encode(w io.Writer) error {
 	// So we'll sort our layers, then ID them in order to make sure they're rendered
 	// in the intended order.
 	sort.Slice(m.ImageLayers, func(i, j int) bool {
-		return m.ImageLayers[i].Name < m.ImageLayers[j].Name
+		in, _ := strconv.ParseInt(m.ImageLayers[i].Name, 10, 64)
+		jn, _ := strconv.ParseInt(m.ImageLayers[j].Name, 10, 64)
+		return in < jn
 	})
 	sort.Slice(m.TileLayers, func(i, j int) bool {
-		return m.TileLayers[i].Name < m.TileLayers[j].Name
+		in, _ := strconv.ParseInt(m.TileLayers[i].Name, 10, 64)
+		jn, _ := strconv.ParseInt(m.TileLayers[j].Name, 10, 64)
+		return in < jn
 	})
 	for i, l := range m.ImageLayers {
 		l.ID = uint(i + 1)

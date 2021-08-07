@@ -72,7 +72,7 @@ func (m *Map) Fits(x, y, zoffset int, o *Map) bool {
 			ty := index / o.Width
 
 			// check if the object goes off the map
-			if tx < 0 || tx >= m.Width || ty < 0 || ty >= m.Height {
+			if tx+x < 0 || tx+x >= m.Width || ty+y < 0 || ty+y >= m.Height {
 				return false
 			}
 

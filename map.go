@@ -71,6 +71,11 @@ func (m *Map) Fits(x, y, zoffset int, o *Map) bool {
 			tx := index % o.Width
 			ty := index / o.Width
 
+			// check if the object goes off the map
+			if tx < 0 || tx >= m.Width || ty < 0 || ty >= m.Height {
+				return false
+			}
+
 			// check if there is a tile there
 			t := m.At(tx+x, ty+y, int(z)+zoffset)
 			if t != nil {

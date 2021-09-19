@@ -166,7 +166,7 @@ func (m *Map) At(x, y, z int) *Properties {
 	}
 
 	index := y*m.Width + x
-	if index >= len(l.decodedTiles) {
+	if index >= len(l.decodedTiles) || index < 0 {
 		return nil
 	}
 
@@ -205,7 +205,7 @@ func (m *Map) Set(x, y, z int, source string) error {
 		l = m.newTilelayer(fmt.Sprintf("%d", z))
 	}
 
-	if len(l.decodedTiles) <= index {
+	if len(l.decodedTiles) <= index || index < 0 {
 		return fmt.Errorf("index %d is out of bounds for this map", index)
 	}
 

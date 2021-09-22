@@ -129,6 +129,10 @@ func (m *Map) Add(x, y, zoffset int, o *Map) {
 			ty := index / o.Width
 
 			src := tile.Image.Source
+			if src == "" {
+				continue
+			}
+
 			m.Set(tx+x, ty+y, int(z)+zoffset, src)
 			m.SetProperties(src, m.Properties(src).Merge(o.Properties(src)))
 		}
@@ -271,7 +275,7 @@ func (m *Map) Properties(source string) *Properties {
 		}
 	}
 	if t == nil {
-		return nil
+		return NewProperties()
 	}
 	return newPropertiesFromList(t.Properties)
 }

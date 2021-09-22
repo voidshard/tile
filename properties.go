@@ -32,6 +32,9 @@ func NewProperties() *Properties {
 
 // Merge properties `o` into this properties
 func (p *Properties) Merge(o *Properties) *Properties {
+	if o == nil {
+		return p
+	}
 	for k, v := range o.ints {
 		p.ints[k] = v
 	}

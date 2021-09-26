@@ -29,7 +29,10 @@ rendered nicely on to larger objects (or maps).
 
 Each tob includes it's own tileset (images it needs) and tile layers named after the z level the tiles 
 should be placed on (a uint). We can thus merge tob(s) into larger maps by merging their tilesets & tile layers
-to produced final composite .tmx map files.`
+to produced final composite .tmx map files.
+
+This script requires an input image and some input region (rectangle x0, y0, x1, y1) which it then resizes 
+to fit the nearest multiple of tile-width & tile-height before cutting into tiles & generating a matching .tmx file.`
 
 var cli struct {
 	// input image to cut this object out from
@@ -41,7 +44,11 @@ var cli struct {
 	// tell us it's ok to overwrite existing stuff (default: no)
 	Overwrite bool `help:"overwrite existing file(s) if found"`
 
-	// how wide/high each pixel should be in pixels
+	// explictly resize input image region before cutting tiles (if not given, we'll take a guess)
+	ResizeX int `default:"0" help:"explictly resize input region x dimension to given value * tile-width"`
+	ResizeY int `default:"0" help:"explictly resize input region y dimension to given value * tile-height"`
+
+	// how wide/high each tile image should be in pixels
 	TileWidth  int `default:"32" help:"width of each tile in px"`
 	TileHeight int `default:"32" help:"height of each tile in px"`
 
@@ -240,8 +247,37 @@ func main() {
 
 	in = cutOut(in, image.Rect(cli.X0, cli.Y0, X1, Y1))
 
-	// resize to fit our desired tile width/height (to closest multiple)
-	in = sizeToTiles(in, cli.TileWidth, cli.TileHeight)
+	// size image to desired specs
+	if cli.ResizeX > 0 && cli.ResizeY > 0 {
+		// user has explicit resize for input image region
+		in = resize.Resize(
+			uint(cli.TileWidth*cli.ResizeX),
+			uint(cli.TileHeight*cli.ResizeY),
+			in,
+			resize.Lanczos3,
+		)
+	} else {
+		if cli.ResizeX > 0 {
+			// resize in x dimension only
+			in = resize.Resize(
+				uint(cli.TileWidth*cli.ResizeX),
+				uint(in.Bounds().Max.Y-in.Bounds().Min.Y),
+				in,
+				resize.Lanczos3,
+			)
+		} else if cli.ResizeY > 0 {
+			// resize in y dimension only
+			in = resize.Resize(
+				uint(in.Bounds().Max.X-in.Bounds().Min.X),
+				uint(cli.TileHeight*cli.ResizeY),
+				in,
+				resize.Lanczos3,
+			)
+		}
+
+		// resize to fit our desired tile width/height (to closest multiple)
+		in = sizeToTiles(in, cli.TileWidth, cli.TileHeight)
+	}
 
 	// figure out how many tiles we've got
 	width := (in.Bounds().Max.X - in.Bounds().Min.X) / cli.TileWidth

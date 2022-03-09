@@ -4,10 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"image/gif"
-	"image/jpeg"
 	"image/png"
-	"io"
 	"io/ioutil"
 	"os"
 	"strconv"
@@ -83,25 +80,6 @@ var cli struct {
 
 	// Rotate output image(s) - we only support square images, so rotations are in increments of 90
 	Rotate int `help:"rotate image in 90 degree increments (90, 180, 270). Image assumed to be square" default="0" enum="0,90,180,270"`
-}
-
-func decode(in io.Reader) (image.Image, error) {
-	decoders := []func(io.Reader) (image.Image, error){
-		png.Decode,
-		gif.Decode,
-		jpeg.Decode,
-	}
-
-	var lastErr error
-	for _, decoder := range decoders {
-		im, err := decoder(in)
-		if err == nil {
-			return im, nil
-		}
-		lastErr = err
-	}
-
-	return nil, lastErr
 }
 
 // savePng to disk
@@ -237,7 +215,7 @@ func main() {
 		panic(err)
 	}
 
-	in, err := decode(bytes.NewBuffer(imgdata))
+	in, _, err := image.Decode(bytes.NewBuffer(imgdata))
 	if err != nil {
 		panic(err)
 	}

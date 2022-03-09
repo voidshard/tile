@@ -41,7 +41,7 @@ func (m *Map) SetMapProperties(in *Properties) {
 
 // Fits returns if copying in the given map to (x,y,zoffset) would
 // overwrite an existing tile on any layer in our current map.
-func (m *Map) Fits(x, y, zoffset int, o *Map) bool {
+func (m *Map) Fits(x, y, zoffset int, o *Map) (bool, error) {
 	if zoffset < 0 {
 		levels := m.ZLevels()
 		for i := len(levels) - 1; i >= 0; i-- {
@@ -73,25 +73,25 @@ func (m *Map) Fits(x, y, zoffset int, o *Map) bool {
 
 			// check if the object goes off the map
 			if tx+x < 0 || tx+x >= m.Width || ty+y < 0 || ty+y >= m.Height {
-				return false
+				return false, nil
 			}
 
 			// check if there is a tile there
 			t := m.At(tx+x, ty+y, int(z)+zoffset)
 			if t != nil {
-				return false
+				return false, nil
 			}
 		}
 	}
 
-	return true
+	return true, nil
 }
 
 // Add the given map `o` starting at the location x,y
 // We merge the TileLayers of both maps, but we only consider TileLayers that
 // we write ie, those named after their z-layers (0, 1, 2, 3, ...).
 // (x,y) is the top left tile, irrespective of z-layer.
-func (m *Map) Add(x, y, zoffset int, o *Map) {
+func (m *Map) Add(x, y, zoffset int, o *Map) error {
 	ts := o.Tilesets[0]
 	if zoffset < 0 {
 		levels := m.ZLevels()
@@ -134,9 +134,13 @@ func (m *Map) Add(x, y, zoffset int, o *Map) {
 			}
 
 			m.Set(tx+x, ty+y, int(z)+zoffset, src)
-			m.SetProperties(src, m.Properties(src).Merge(o.Properties(src)))
+			mprops, _ := m.Properties(src)
+			oprops, _ := o.Properties(src)
+			m.SetProperties(src, mprops.Merge(oprops))
 		}
 	}
+
+	return nil
 }
 
 // ZLevels returns all z-level maps (maps named after an int) sorted low -> high.
@@ -260,10 +264,10 @@ func (m *Map) SetBackground(src string) {
 
 // Properties returns the properties of the tile indicated by the `source`
 // image (or nil).
-func (m *Map) Properties(source string) *Properties {
+func (m *Map) Properties(source string) (*Properties, error) {
 	if source == "" {
 		// the nil tile has no properties
-		return nil
+		return nil, nil
 	}
 
 	var t *Tile
@@ -275,17 +279,17 @@ func (m *Map) Properties(source string) *Properties {
 		}
 	}
 	if t == nil {
-		return NewProperties()
+		return NewProperties(), nil
 	}
-	return newPropertiesFromList(t.Properties)
+	return newPropertiesFromList(t.Properties), nil
 }
 
 // SetProperties sets properties on the tile indicated by the given source
 // image.
-func (m *Map) SetProperties(source string, in *Properties) {
+func (m *Map) SetProperties(source string, in *Properties) error {
 	if source == "" {
 		// cannot set properties on the nil tile
-		return
+		return nil
 	}
 
 	var t *Tile
@@ -301,6 +305,8 @@ func (m *Map) SetProperties(source string, in *Properties) {
 	}
 
 	t.Properties = in.toList()
+
+	return nil
 }
 
 // Encode the current map as XML to a io.Writer stream

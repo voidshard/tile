@@ -5,6 +5,9 @@ type Tileable interface {
 	// Set a single tile (given src image) at x,y,z
 	Set(x, y, z int, src string) error
 
+	// At returns the set src at the given location
+	At(x, y, z int) (string, error)
+
 	// Add an object `o` beginning at x,y,z
 	// Any set properties on tiles in `o` will be merged
 	Add(x, y, z int, o *Map) error

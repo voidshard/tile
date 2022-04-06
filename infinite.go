@@ -111,6 +111,28 @@ func (i *InfiniteMap) Map(tilewidth, tileheight uint, x0, y0, x1, y1 int) (*Map,
 	return tmap, nil
 }
 
+// At returns the tile that exists at the given location (or "" if unset)
+func (i *InfiniteMap) At(x, y, z int) (string, error) {
+	rows, err := i.db.NamedQuery(
+		"SELECT x,y,z,src FROM tiles WHERE x=:x0 AND y=:y0 AND z=:z0 LIMIT 1;",
+		map[string]interface{}{
+			"x0": x,
+			"y0": y,
+			"z0": z,
+		},
+	)
+	if err != nil {
+		return "", err
+	}
+
+	tile := dbTile{}
+	for rows.Next() { // there's at most one due to LIMIT 1
+		rows.StructScan(&tile)
+	}
+
+	return tile.Src, nil
+}
+
 // Set the given image src at (x,y,z)
 func (i *InfiniteMap) Set(x, y, z int, src string) error {
 	_, err := i.db.NamedExec(sqlUpdateTiles, newDBTile(x, y, z, src))

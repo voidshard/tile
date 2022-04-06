@@ -45,8 +45,8 @@ func (m *Map) Fits(x, y, zoffset int, o *Map) (bool, error) {
 	if zoffset < 0 {
 		levels := m.ZLevels()
 		for i := len(levels) - 1; i >= 0; i-- {
-			props := m.At(x, y, i)
-			if props != nil {
+			src, _ := m.At(x, y, i)
+			if src != "" {
 				zoffset = i
 				break
 			}
@@ -77,8 +77,8 @@ func (m *Map) Fits(x, y, zoffset int, o *Map) (bool, error) {
 			}
 
 			// check if there is a tile there
-			t := m.At(tx+x, ty+y, int(z)+zoffset)
-			if t != nil {
+			src, _ := m.At(tx+x, ty+y, int(z)+zoffset)
+			if src != "" {
 				return false, nil
 			}
 		}
@@ -96,8 +96,8 @@ func (m *Map) Add(x, y, zoffset int, o *Map) error {
 	if zoffset < 0 {
 		levels := m.ZLevels()
 		for i := len(levels) - 1; i >= 0; i-- {
-			props := m.At(x, y, i)
-			if props != nil {
+			src, _ := m.At(x, y, i)
+			if src != "" {
 				zoffset = i
 				break
 			}
@@ -160,7 +160,7 @@ func (m *Map) ZLevels() []int {
 
 // At returns the properties of the tile at (x, y, z) or nil if not set
 // (ie. set to the nil tile).
-func (m *Map) At(x, y, z int) *Properties {
+func (m *Map) At(x, y, z int) (string, error) {
 	var l *TileLayer
 	for _, tl := range m.TileLayers {
 		// match z => tilelayer name
@@ -170,29 +170,29 @@ func (m *Map) At(x, y, z int) *Properties {
 		}
 	}
 	if l == nil {
-		return nil
+		return "", nil
 	}
 
 	index := y*m.Width + x
 	if index >= len(l.decodedTiles) || index < 0 {
-		return nil
+		return "", nil
 	}
 
 	id := l.decodedTiles[index]
 	if id == 0 {
 		// the nil tile
-		return nil
+		return "", nil
 	}
 
 	for _, ts := range m.Tilesets {
 		t, ok := ts.tileByID[id]
 		if !ok {
-			return nil
+			return "", nil
 		}
-		return newPropertiesFromList(t.Properties)
+		return t.Image.Source, nil
 	}
 
-	return nil
+	return "", nil
 }
 
 // Set the tile source for (x,y,z) to some image src.

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	"image/draw"
 	"image/png"
 	"io/ioutil"
 	"os"
@@ -42,8 +43,9 @@ var cli struct {
 	Overwrite bool `help:"overwrite existing file(s) if found"`
 
 	// explictly resize input image region before cutting tiles (if not given, we'll take a guess)
-	ResizeX int `default:"0" help:"explictly resize input region x dimension to given value * tile-width"`
-	ResizeY int `default:"0" help:"explictly resize input region y dimension to given value * tile-height"`
+	ResizeX         int  `default:"0" help:"explictly resize input region x dimension to given value * tile-width"`
+	ResizeY         int  `default:"0" help:"explictly resize input region y dimension to given value * tile-height"`
+	ResizeByPadding bool `help:"if resizing & input region is smaller, rather than streching pad with white space"`
 
 	// how wide/high each tile image should be in pixels
 	TileWidth  int `default:"32" help:"width of each tile in px"`
@@ -203,6 +205,36 @@ func parseOffset(tilesize, start int, offset string) int {
 	return int(num)
 }
 
+// doResize resizes an image either via padding or more
+// properly via sampling up/down
+func doResize(w, h uint, in image.Image, pad bool) image.Image {
+	bnds := in.Bounds()
+	curW := bnds.Max.X - bnds.Min.X
+	curH := bnds.Max.Y - bnds.Min.Y
+	oversized := curW > int(w) || curH > int(h)
+
+	if pad && !oversized {
+		newImg := image.NewRGBA(image.Rect(0, 0, int(w), int(h)))
+		padx := int(w) - curW
+		pady := int(h) - curH
+
+		draw.Draw(
+			newImg, image.Rect(padx/2, pady/2, padx/2+curW, pady/2+curH),
+			in, bnds.Min, draw.Src,
+		)
+
+		return newImg
+	}
+
+	// if not padding OR the src is larger we have to resize more traditionally ..
+	return resize.Resize(
+		w,
+		h,
+		in,
+		resize.Lanczos3,
+	)
+}
+
 func main() {
 	kong.Parse(
 		&cli,
@@ -228,28 +260,28 @@ func main() {
 	// size image to desired specs
 	if cli.ResizeX > 0 && cli.ResizeY > 0 {
 		// user has explicit resize for input image region
-		in = resize.Resize(
+		in = doResize(
 			uint(cli.TileWidth*cli.ResizeX),
 			uint(cli.TileHeight*cli.ResizeY),
 			in,
-			resize.Lanczos3,
+			cli.ResizeByPadding,
 		)
 	} else {
 		if cli.ResizeX > 0 {
 			// resize in x dimension only
-			in = resize.Resize(
+			in = doResize(
 				uint(cli.TileWidth*cli.ResizeX),
 				uint(in.Bounds().Max.Y-in.Bounds().Min.Y),
 				in,
-				resize.Lanczos3,
+				cli.ResizeByPadding,
 			)
 		} else if cli.ResizeY > 0 {
 			// resize in y dimension only
-			in = resize.Resize(
+			in = doResize(
 				uint(in.Bounds().Max.X-in.Bounds().Min.X),
 				uint(cli.TileHeight*cli.ResizeY),
 				in,
-				resize.Lanczos3,
+				cli.ResizeByPadding,
 			)
 		}
 
@@ -265,7 +297,6 @@ func main() {
 
 	fmt.Printf("read (%d,%d)->(%d,%d) from %s ", cli.X0, cli.Y0, X1, Y1, cli.Input)
 	fmt.Printf("resize to %dx%d (tiles), making %d new tiles.\n", width, height, width*height)
-	fmt.Printf("tile properties: %v\n", props)
 
 	if cli.DryRun {
 		fmt.Printf("dry-run detected: doing nothing")

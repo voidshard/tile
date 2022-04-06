@@ -92,13 +92,24 @@ func decorate(m tile.Tileable) error {
 			m.Set(x, y, 0, grass)
 		}
 	}
-	m.Set(1, 2, 1, mushroom)
+	err := m.Set(1, 2, 1, mushroom)
+	if err != nil {
+		return err
+	}
+
+	mushsrc, err := m.At(1, 2, 1)
+	if err != nil {
+		return err
+	}
+	if mushsrc != mushroom {
+		return fmt.Errorf("failed to read src back, got %s expected %s", mushsrc, mushroom)
+	}
 
 	fprops := tile.NewProperties()
 	fprops.SetString("hello", "world")
 	fprops.SetInt("one", 1)
 	fprops.SetBool("bool", false)
-	err := m.SetProperties(mushroom, fprops)
+	err = m.SetProperties(mushroom, fprops)
 	if err != nil {
 		return err
 	}

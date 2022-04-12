@@ -72,16 +72,31 @@ var cli struct {
 	// set properties on all tiles
 	Props map[string]string `short:"p" help:"set props on resulting tob"`
 
+	// set properties on particular tile
+	TileProps TileProps `embed:"" prefix:"tile."`
+
 	// multiply z levels by this to get a final z level. We do this to leave space between levels
 	// to add features / whatever later by hand if needed.
 	// (That is, since we have unused layer numbers between where we draw things we can add tiles
 	// between existing layers later on without altering things)
 	Mult int `help:"gap between z levels (leave space for future object layers)" default:"10"`
 
+	// Only write image(s)
 	ImageOnly bool `help:"only cut out image(s) (no .tmx file needed)"`
 
 	// Rotate output image(s) - we only support square images, so rotations are in increments of 90
 	Rotate int `help:"rotate image in 90 degree increments (90, 180, 270). Image assumed to be square" default="0" enum="0,90,180,270"`
+}
+
+type TileProps struct {
+	X     int `help:"x coord of final tile to add props to"`
+	Y     int `help:"x coord of final tile to add props to"`
+	Z     int `help:"x coord of final tile to add props to"`
+	Props map[string]string
+}
+
+func (t *TileProps) Match(x, y, z int) bool {
+	return len(t.Props) > 0 && t.X == x && t.Y == y && t.Z == z
 }
 
 // savePng to disk
@@ -153,10 +168,10 @@ func cutOut(in image.Image, r image.Rectangle) image.Image {
 }
 
 // parseProps reads given cli -P --props into a final *Properties
-func parseProps() *tile.Properties {
+func parseProps(in map[string]string) *tile.Properties {
 	p := tile.NewProperties()
 
-	for k, v := range cli.Props {
+	for k, v := range in {
 		if v == "true" {
 			p.SetBool(k, true)
 			continue
@@ -293,10 +308,13 @@ func main() {
 	width := (in.Bounds().Max.X - in.Bounds().Min.X) / cli.TileWidth
 	height := (in.Bounds().Max.Y - in.Bounds().Min.Y) / cli.TileHeight
 
-	props := parseProps()
+	props := parseProps(cli.Props)
 
-	fmt.Printf("read (%d,%d)->(%d,%d) from %s ", cli.X0, cli.Y0, X1, Y1, cli.Input)
-	fmt.Printf("resize to %dx%d (tiles), making %d new tiles.\n", width, height, width*height)
+	tprops := parseProps(cli.TileProps.Props)
+	tprops.Merge(props)
+
+	fmt.Printf("read (%d,%d)->(%d,%d) from %s", cli.X0, cli.Y0, X1, Y1, cli.Input)
+	fmt.Printf(" resize to %dx%d (tiles), making %d new tiles. Props %v.\n", width, height, width*height, props)
 
 	if cli.DryRun {
 		fmt.Printf("dry-run detected: doing nothing")
@@ -358,7 +376,12 @@ func main() {
 
 			// set map src & properties
 			m.Set(x, y, z, fname)
-			m.SetProperties(fname, props)
+			if cli.TileProps.Match(x, y, z) {
+				fmt.Printf("setting additional props (%d,%d,%d) %v\n", x, y, z, tprops)
+				m.SetProperties(fname, tprops)
+			} else {
+				m.SetProperties(fname, props)
+			}
 			numtiles++
 		}
 	}

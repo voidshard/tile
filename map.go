@@ -220,6 +220,7 @@ func (m *Map) Set(x, y, z int, source string) error {
 	if source == "" {
 		// nil tile
 		l.decodedTiles[index] = 0
+		return nil
 	}
 
 	var t *Tile
